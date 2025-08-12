@@ -34,3 +34,4 @@ npm start
 - `GET /api/v1/post` - Get all posts
 - `POST /api/v1/post` - Create a new post
 - `POST /api/v1/dalle` - Generate image using DALL-E
+

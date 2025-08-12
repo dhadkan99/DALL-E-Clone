@@ -25,9 +25,63 @@ const CreatePost = () => {
     setForm({ ...form, prompt: randomPrompt });
   };
 
-  const generateImage = async () => {};
+  const generateImage = async () => {
+    if (form.prompt.trim()) {
+      try {
+        setGeneratingImg(true);
+        const response = await fetch("http://localhost:8080/api/v1/dalle", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ prompt: form.prompt.trim() }),
+        });
 
-  const handleSubmit = async (e) => {};
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(errText || "Failed to generate image");
+        }
+
+        const data = await response.json();
+        setForm({ ...form, photo: `data:image/jpeg;base64,${data.photo}` });
+      } catch (err) {
+        alert(`Error generating image: ${err.message}`);
+      } finally {
+        setGeneratingImg(false);
+      }
+    } else {
+      alert("Please provide a valid prompt");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (form.prompt.trim() && form.photo) {
+      setLoading(true);
+      try {
+        const response = await fetch("http://localhost:8080/api/v1/post", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...form, name: form.name.trim() }),
+        });
+
+        if (!response.ok) throw new Error("Failed to share post");
+
+        await response.json();
+        alert("Post shared successfully!");
+        navigate("/");
+      } catch (err) {
+        alert(`Error sharing post: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      alert("Please generate an image before sharing");
+    }
+  };
 
   return (
     <section className="mx-auto max-w-7xl">
@@ -45,7 +99,7 @@ const CreatePost = () => {
             labelName="Your Name"
             type="text"
             name="name"
-            placeholder="ex. Bobby"
+            placeholder="Ex., John Doe"
             value={form.name}
             handleChange={handleChange}
           />
@@ -88,7 +142,8 @@ const CreatePost = () => {
           <button
             type="button"
             onClick={generateImage}
-            className=" text-white bg-green-700 font-medium rounded-md text-sm w-full sm:w-auto px-5 py-2.5 text-center"
+            disabled={generatingImg || loading}
+            className="text-white bg-green-700 font-medium rounded-md text-sm w-full sm:w-auto px-5 py-2.5 text-center disabled:opacity-50"
           >
             {generatingImg ? "Generating..." : "Generate"}
           </button>
@@ -101,7 +156,8 @@ const CreatePost = () => {
           </p>
           <button
             type="submit"
-            className="mt-3 text-white bg-[#6469ff] font-medium rounded-md text-sm w-full sm:w-auto px-5 py-2.5 text-center"
+            disabled={loading}
+            className="mt-3 text-white bg-[#6469ff] font-medium rounded-md text-sm w-full sm:w-auto px-5 py-2.5 text-center disabled:opacity-50"
           >
             {loading ? "Sharing..." : "Share with the Community"}
           </button>
